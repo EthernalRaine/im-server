@@ -2,6 +2,7 @@ package utility
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -12,7 +13,7 @@ import (
 
 func GetBuild() string {
 	// Specifier (Major.Minor.Push.Hotfix)
-	return "Next Beta 1 (2.0.1.0)"
+	return "Next Beta 1 (2.0.3.0)"
 }
 
 func SanitizeString(input string) string {
@@ -54,4 +55,10 @@ func ByteSliceToHex(slice []byte) string {
 	fmt.Fprintf(buff, "]")
 
 	return buff.String()
+}
+
+func ConvertUnsignedToArray(crc uint32) []byte {
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, crc)
+	return b
 }

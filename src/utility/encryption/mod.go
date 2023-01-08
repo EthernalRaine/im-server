@@ -4,19 +4,21 @@ import (
 	"chimera/utility/logging"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/md5"
 	"crypto/rand"
 	"crypto/rc4"
 	"encoding/base64"
-	"encoding/hex"
+	"hash/crc32"
 	"io"
 )
 
-// MD5
+var crctable *crc32.Table
 
-func GetMD5Hash(text string) string {
-	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
+func GetCRCHash(data []byte) uint32 {
+	if crctable == nil {
+		crctable = crc32.MakeTable(crc32.Castagnoli)
+	}
+
+	return crc32.Checksum(data, crctable)
 }
 
 func SwapRC4State(pwd []byte, data []byte) []byte {

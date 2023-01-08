@@ -3,6 +3,7 @@ package main
 import (
 	"chimera/bridge"
 	"chimera/network/aim"
+	"chimera/network/msn"
 	"chimera/network/myspace"
 	"chimera/utility"
 	"chimera/utility/configuration"
@@ -18,11 +19,12 @@ func main() {
 	logging.Info("Main", "Build Info: [%s]", utility.GetBuild())
 
 	database.Initialize()
+	bridge.Initialize()
 
 	svc := configuration.GetConfiguration().Services
-	bridge.SignOnService("MySpace", bridge.ServiceMySpace, "2.0", svc.MySpace, myspace.LogonMySpace)
-	bridge.SignOnService("AIM", bridge.ServiceAIM, "1.0", svc.AIM, aim.LogonAIM)
-	//bridge.SignOnService("MSN", bridge.ServiceMSN, "1.0", svc.MSN, msn.LogonMSN)
+	bridge.SignOnService("MySpace", "2.0", svc.MySpace, myspace.LogonMySpace)
+	bridge.SignOnService("MSN", "1.0", svc.MSN, msn.LogonMSN)
+	bridge.SignOnService("AIM", "1.0", svc.AIM, aim.LogonAIM)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
