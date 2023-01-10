@@ -21,16 +21,13 @@ func OSCARHandleAuthenticationFrameDataFromFLAP(client *network.Client, context 
 	case FrameData:
 		snac := OSCARSerializeSNAC(flap.Data)
 
-		switch snac.Foodgroup {
-		case FoodgroupBUCP:
-
+		if snac.Foodgroup == FoodgroupBUCP {
 			switch snac.Subgroup {
 			case BUCPChallengeRequest:
 				OSCARHandleClientBUCPChallengeRequest(client, context, snac)
 			case BUCPLoginRequest:
 				OSCARHandleClientBUCPLoginRequest(client, context, snac)
 			}
-
 		}
 	}
 }
@@ -40,8 +37,17 @@ func OSCARHandleBOSFrameDataFromFLAP(client *network.Client, context *OSCARConte
 	case FrameSignOn:
 		OSCARHandleClientBOSFrameSignOn(client, context, flap)
 	case FrameData:
-		//snac := SNACSerialize(packet.Data)
+		snac := OSCARSerializeSNAC(flap.Data)
 
+		switch snac.Foodgroup {
+		case FoodgroupOSERVICE:
+
+			switch snac.Subgroup {
+			case OSERVICEClientVersions:
+				OSCARHandleBOSClientSupportedServices(client, context, flap)
+			}
+
+		}
 	}
 }
 
@@ -53,11 +59,6 @@ func OSCARHandleClientFLAPSignOnFrame(client *network.Client, context *OSCARCont
 		0xF3, 0x26, 0x81, 0xC4, 0x39, 0x86, 0xDB, 0x92,
 		0x71, 0xA3, 0xB9, 0xE6, 0x53, 0x7A, 0x95, 0x7C,
 	}
-	/*
-		0xF3 0x26 0x81 0xC4 0x39 0x86 0xDB 0x92
-		\x71\xA3\xB9\xE6\x53\x7A\x95\x7C'
-
-	*/
 
 	tlvs, err := OSCARDeserializeMultipleTLVs(flap.Data[4:])
 
@@ -337,4 +338,8 @@ func OSCARHandleClientBOSFrameSignOn(client *network.Client, context *OSCARConte
 	}
 
 	logging.Debug("OSCAR/BOS Frame SignOn", "No matching cookie attempt?")
+}
+
+func OSCARHandleBOSClientSupportedServices(client *network.Client, context *OSCARContext, flap *FLAPPacket) {
+
 }

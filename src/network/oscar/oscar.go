@@ -36,7 +36,6 @@ func ListenAuth() {
 			OSCARClearServerSequence(context)
 
 			flap := OSCARNewFLAPPacket(FrameSignOn, context.ServerSequence, []byte{0x00, 0x00, 0x00, 0x01})
-
 			client.Connection.BinaryWriteTraffic(OSCARDeserializeFLAP(flap))
 
 			for {
@@ -86,7 +85,6 @@ func ListenBOS() {
 			client.Connection.BinaryWriteTraffic(OSCARDeserializeFLAP(flap))
 
 			for {
-				logging.Debug("OSCAR/BOS", "step")
 				combined, err := client.Connection.BinaryReadTraffic()
 				if err != nil {
 					break

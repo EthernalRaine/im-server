@@ -115,10 +115,19 @@ func MySpaceHandleClientAuthentication(cli *network.Client, ctx *MySpaceContext)
 
 	meta, err := database.GetUserMetaDetailsDataByUIN(cli.ClientAccount.UIN)
 
+	/*
+		Since MySpace doesn't have any documented error codes for Ban or similar,
+		I just kick the client from the network instead.
+	*/
+
 	if err != nil {
 		logging.Error("MySpace/Authentication", "Failed to fetch MetaDetails Data! (%s)", err.Error())
 		return false
 	}
+
+	logging.Debug("MySpace/Authentication", "Meta UIN: %d", meta.UIN)
+	logging.Debug("MySpace/Authentication", "Meta AccountFlag: %d", meta.AccountFlag)
+	logging.Debug("MySpace/Authentication", "Meta UsageFlag: %d", meta.UsageFlag)
 
 	if meta.AccountFlag > 1 {
 		logging.Warn("MySpace", "User with bad Account Flags detected (Flag: %d)! Disconnecting...", meta.AccountFlag)

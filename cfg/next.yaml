@@ -1,6 +1,6 @@
 connection:
   mail: chimera.im
-  root: localhost
+  root: 172.20.100.187
   dblogin: im:throwaway
 encryption:
   aes: empty

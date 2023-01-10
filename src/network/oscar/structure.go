@@ -55,14 +55,17 @@ const (
 
 // OSERVICE
 const (
-	OSERVICEHostOnline = 0x0003
+	OSERVICEHostOnline     = 0x0003
+	OSERVICEClientVersions = 0x0017
 )
 
+// http://web.archive.org/web/20211023214802fw_/http://iserverd.khstu.ru/oscar/families.html
 var supportedFoodgroups []uint16 = []uint16{
-	FoodgroupOSERVICE,
-	FoodgroupBUDDY,
-	FoodgroupICBM,
-	FoodgroupFEEDBAG,
+	FoodgroupOSERVICE, // Generic service controls
+	FoodgroupBUDDY,    // Buddy List management service
+	FoodgroupICBM,     // ICBM (messages) service
+	FoodgroupFEEDBAG,  // Server Side Information (SSI) service
+	FoodgroupBUCP,     // Authorization/registration service
 }
 
 var clientContexts []*OSCARContext
