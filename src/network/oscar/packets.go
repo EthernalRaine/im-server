@@ -116,6 +116,11 @@ func OSCARHandleClientFLAPSignOnFrame(client *network.Client, context *OSCARCont
 			return
 		}
 
+		if database.SetLastLoginDate(client.ClientAccount.UIN) != nil {
+			logging.Error("OSCAR/FLAP Authentication", "Failed to set LastLogin date! (%s)", err.Error())
+			return
+		}
+
 		clientversion := OSCARFindTLV(tlvs, 0x0003)
 		logging.Info("OSCAR", "Client successfully authenticated! (UIN: %d, SN: %s, Version: %s, Proto: OSCAR)", client.ClientAccount.UIN, client.ClientAccount.DisplayName, clientversion.Value)
 
@@ -257,6 +262,11 @@ func OSCARHandleClientBUCPLoginRequest(client *network.Client, context *OSCARCon
 
 		if err != nil {
 			logging.Error("OSCAR/BUCP Authentication", "Failed to generate BOS Cookie! (%s)", err.Error())
+			return
+		}
+
+		if database.SetLastLoginDate(client.ClientAccount.UIN) != nil {
+			logging.Error("OSCAR/BUCP Authentication", "Failed to set LastLogin date! (%s)", err.Error())
 			return
 		}
 

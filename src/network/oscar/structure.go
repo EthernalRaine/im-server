@@ -30,11 +30,11 @@ type TLV struct {
 
 // Foodgroups
 const (
-	FoodgroupOSERVICE = 0x0001
-	FoodgroupBUDDY    = 0x0003
-	FoodgroupICBM     = 0x0004
-	FoodgroupFEEDBAG  = 0x0013
-	FoodgroupBUCP     = 0x0017
+	FoodgroupOSERVICE = 0x0001 // Generic service controls
+	FoodgroupBUDDY    = 0x0003 // Buddy List management service
+	FoodgroupICBM     = 0x0004 // ICBM (messages) service
+	FoodgroupFEEDBAG  = 0x0013 // Server Side Information (SSI) service
+	FoodgroupBUCP     = 0x0017 // Authorization/registration service
 )
 
 // FLAP
@@ -61,11 +61,10 @@ const (
 
 // http://web.archive.org/web/20211023214802fw_/http://iserverd.khstu.ru/oscar/families.html
 var supportedFoodgroups []uint16 = []uint16{
-	FoodgroupOSERVICE, // Generic service controls
-	FoodgroupBUDDY,    // Buddy List management service
-	FoodgroupICBM,     // ICBM (messages) service
-	FoodgroupFEEDBAG,  // Server Side Information (SSI) service
-	FoodgroupBUCP,     // Authorization/registration service
+	FoodgroupOSERVICE,
+	FoodgroupBUDDY,
+	FoodgroupICBM,
+	FoodgroupFEEDBAG,
 }
 
 var clientContexts []*OSCARContext
