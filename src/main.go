@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -25,6 +26,19 @@ func main() {
 	bridge.SignOnService("MySpace", "2.0", svc.MySpace, myspace.LogonMySpace)
 	bridge.SignOnService("MSN", "1.0", svc.MSN, msn.LogonMSN)
 	bridge.SignOnService("AIM", "1.0", svc.AIM, aim.LogonAIM)
+
+	time.Sleep(time.Second * 2)
+
+	data := bridge.BridgeBuildDataPackage(bridge.BridgeMessageTransportHeader{
+		SenderUIN: 10000,
+		RecvUIN:   10001,
+	}, []bridge.BridgeMessageActionData{
+		bridge.BridgeNewActionDataCommand("ac", "ns"),
+		bridge.BridgeNewActionDataCommand("key", "value"),
+		bridge.BridgeNewActionDataCommand("abc", "def"),
+	})
+
+	bridge.BridgeSendData(data)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

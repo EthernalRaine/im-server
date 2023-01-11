@@ -2,9 +2,10 @@ package bridge
 
 import (
 	"chimera/utility/encryption"
+	"chimera/utility/logging"
 	"fmt"
 	"strconv"
-	"sync"
+	"strings"
 )
 
 func BridgeNewTransportHeader(sender int, recv int) BridgeMessageTransportHeader {
@@ -40,10 +41,59 @@ func BridgeBuildDataPackage(header BridgeMessageTransportHeader, actiondata []Br
 	return data
 }
 
-var sendDataMutex sync.RWMutex
+func BridgeSplitDataPacket(datastream string) []string {
+	decodedPacket := datastream
+	splits := strings.Split(decodedPacket, "\x1c")
 
-func BridgeSendData(data string) {
-	sendDataMutex.Lock()
-	messages = append(messages, data)
-	sendDataMutex.Unlock()
+	return splits
+}
+
+func BridgeRetrieveValueFromActionDataPair(actionkey string, datastream string) string {
+	decodedPacket := BridgeSplitDataPacket(datastream)[1] // index 1 is action data
+	splits := strings.Split(decodedPacket, "\xc0\x80")
+
+	for ix := 0; ix < len(splits); ix++ {
+		if splits[ix] == actionkey {
+			return splits[ix+1]
+		}
+	}
+
+	return ""
+}
+
+func BridgeRetrieveTransportHeaderInformation(datastream string) BridgeMessageTransportHeader {
+	decode := BridgeSplitDataPacket(datastream)[0] // index 0 is header data
+	uins := strings.Split(decode, "|")
+
+	s_uin, err := strconv.Atoi(strings.Trim(uins[0], "S:"))
+
+	if err != nil {
+		logging.Error("Bridge/BridgeRetrieveTransportHeaderInformation", "Failed to decode SenderUIN from Header (%s)", err.Error())
+		return BridgeMessageTransportHeader{}
+	}
+
+	r_uin, err := strconv.Atoi(strings.Trim(uins[1], "R:"))
+
+	if err != nil {
+		logging.Error("Bridge/BridgeRetrieveTransportHeaderInformation", "Failed to decode RecvUIN from Header (%s)", err.Error())
+		return BridgeMessageTransportHeader{}
+	}
+
+	header := BridgeMessageTransportHeader{
+		SenderUIN: s_uin,
+		RecvUIN:   r_uin,
+	}
+	return header
+}
+
+func BridgeRetrieveDataCRC(datastream string) uint32 {
+	decode := BridgeSplitDataPacket(datastream)[2] // index 2 is crc
+	crc, err := strconv.ParseUint(decode, 10, 32)
+
+	if err != nil {
+		logging.Error("Bridge/BridgeRetrieveDataCRC", "Failed to decode CRC32 from datastream (%s)", err.Error())
+		return 0xDEADBEEF
+	}
+
+	return uint32(crc)
 }
