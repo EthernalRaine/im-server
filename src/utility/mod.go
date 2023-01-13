@@ -12,7 +12,7 @@ import (
 
 func GetBuild() string {
 	// Specifier (Major.Minor.Push.Hotfix)
-	return "NextAIM Alpha 2"
+	return "NextAIM Alpha 2 [Codename: Dragon]"
 }
 
 func SanitizeString(input string) string {
