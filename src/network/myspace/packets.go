@@ -196,7 +196,7 @@ func MySpaceHandleClientBroadcastSigninStatus(cli *network.Client, ctx *MySpaceC
 						cli.Connection.WriteTraffic(MySpaceBuildPackage([]MySpaceDataPair{
 							MySpaceNewDataInt("bm", 100),
 							MySpaceNewDataInt("f", network.Clients[ix].ClientAccount.UIN),
-							MySpaceNewDataGeneric("msg", fmt.Sprintf("|s|%d|ss|%s", clientContexts[ix].Status.Code, clientContexts[ix].Status.Message)),
+							MySpaceNewDataGeneric("msg", fmt.Sprintf("|s|%d|ss|%s", ClientContexts[ix].Status.Code, ClientContexts[ix].Status.Message)),
 						}))
 
 					}
@@ -434,7 +434,7 @@ func MySpaceHandleClientPacketAddBuddy(cli *network.Client, ctx *MySpaceContext,
 				cli.Connection.WriteTraffic(MySpaceBuildPackage([]MySpaceDataPair{
 					MySpaceNewDataInt("bm", 100),
 					MySpaceNewDataInt("f", network.Clients[ix].ClientAccount.UIN),
-					MySpaceNewDataGeneric("msg", fmt.Sprintf("|s|%d|ss|%s", clientContexts[ix].Status.Code, clientContexts[ix].Status.Message)),
+					MySpaceNewDataGeneric("msg", fmt.Sprintf("|s|%d|ss|%s", ClientContexts[ix].Status.Code, ClientContexts[ix].Status.Message)),
 				}))
 				network.Clients[ix].Connection.WriteTraffic(MySpaceBuildPackage([]MySpaceDataPair{
 					MySpaceNewDataInt("bm", 100),
@@ -509,7 +509,7 @@ func MySpaceHandleClientPacketBuddyInstantMessage(cli *network.Client, stream st
 			isOnline = true
 			network.Clients[ix].Connection.WriteTraffic(MySpaceBuildPackage([]MySpaceDataPair{
 				MySpaceNewDataInt("bm", 1),
-				MySpaceNewDataInt("sesskey", clientContexts[ix].SessionKey),
+				MySpaceNewDataInt("sesskey", ClientContexts[ix].SessionKey),
 				MySpaceNewDataInt("f", cli.ClientAccount.UIN),
 				MySpaceNewDataGeneric("msg", msg),
 			}))

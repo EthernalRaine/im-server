@@ -10,7 +10,7 @@ import (
 func BridgeNewCommandListener() {
 	for {
 		for ix := 0; ix < len(messages); ix++ {
-			logging.Trace("Bridge/BridgeNewCommandListener", "Data Len: %d, Data Content: %s", len(messages[ix]), messages[ix])
+			logging.Trace("Bridge/Listener", "Data Len: %d, Data Content: %s", len(messages[ix]), messages[ix])
 			if BridgeVerifyCommand(messages[ix]) {
 				BridgeCommandParser(messages[ix])
 			} else {
@@ -30,10 +30,17 @@ func BridgeVerifyCommand(data string) bool {
 	datacrc := BridgeRetrieveDataCRC(data)
 	newcrc := encryption.GetCRCHash([]byte(datasplice))
 
+	logging.Debug("Bridge/CRC", "CommandData CRC: %d", datacrc)
+	logging.Debug("Bridge/CRC", "SplicedData CRC: %d", newcrc)
+
 	return datacrc == newcrc
 }
 
 /*
+	supply 0 for RecvUIN if the action does not require it
+
+	---------------------------------------
+
 	ac - action <- This *needs* to be the Key for any of the following
 
 	---------------------------------------
@@ -44,38 +51,47 @@ func BridgeVerifyCommand(data string) bool {
 	lb - logoff broadcast
 	af - add friend
 	df - delete friend
-	bf - block friend
-	uf - unblock friend
+	bf - block user
+	uf - unblock user
 	ic - information change (pfp or similar)
 	fc - fetch client
 	fi - fetch information (userdetails)
 
-	---------------------------------------
-
-	er - error key followed by error code
 */
 
 func BridgeCommandParser(data string) {
 
 	actionkey := BridgeRetrieveValueFromActionDataPair("ac", data)
+	actiondata := BridgeSplitDataPacket(data)[1]
+	actionheader := BridgeRetrieveTransportHeaderInformation(data)
 
-	logging.Debug("Bridge/BridgeCommandParser", "Command Header: %+v", BridgeRetrieveTransportHeaderInformation(data))
-	logging.Debug("Bridge/BridgeCommandParser", "Command Action Data: %s", BridgeSplitDataPacket(data)[1])
-	logging.Debug("Bridge/BridgeCommandParser", "Command CRC32: %d", BridgeRetrieveDataCRC(data))
+	logging.Debug("Bridge/Parser", "Command Header: %+v", actionheader)
+	logging.Debug("Bridge/Parser", "Command Action Data: %s", BridgeFormatActionData(actiondata))
 
 	switch actionkey {
 	case "ns":
+		BridgeHandleActionNewStatusMessage(actiondata)
 	case "im":
+		BridgeHandleActionSendInstantMessage(actiondata)
 	case "sb":
+		BridgeHandleActionBroadcastSignon(actionheader, actiondata)
 	case "lb":
+		BridgeHandleActionBroadcastLogoff(actionheader, actiondata)
 	case "af":
+		BridgeHandleActionAddContact(actiondata)
 	case "df":
+		BridgeHandleActionDeleteContact(actiondata)
 	case "bf":
+		BridgeHandleActionBlockUser(actiondata)
 	case "uf":
+		BridgeHandleActionUnblockUser(actiondata)
 	case "ic":
+		BridgeHandleActionChangeServerInformation(actiondata)
 	case "fc":
+		BridgeHandleActionFetchClientDetails(actiondata)
 	case "fi":
+		BridgeHandleActionFetchUserDetails(actiondata)
 	default:
-		logging.Warn("Bridge/Parser", "unknown command detected, redirecting to error")
+		logging.Warn("Bridge/Parser", "unknown command detected, ignoring")
 	}
 }

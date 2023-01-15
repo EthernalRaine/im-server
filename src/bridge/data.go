@@ -97,3 +97,15 @@ func BridgeRetrieveDataCRC(datastream string) uint32 {
 
 	return uint32(crc)
 }
+
+func BridgeFormatActionData(datastream string) string {
+	splits := strings.Split(datastream, "\xc0\x80")
+
+	str := ""
+	for ix := 1; ix < len(splits); ix++ {
+		str += fmt.Sprintf("[%s %s] ", splits[ix], splits[ix+1])
+		ix++
+	}
+
+	return str
+}

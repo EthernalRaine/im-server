@@ -47,3 +47,10 @@ type OfflineMessage struct {
 }
 
 var Clients []*Client
+
+const (
+	MessengerMySpace = "MySpaceIM"
+	MessengerMSN     = "MSN Messenger"
+	MessengerAIM     = "AOL Instant Messenger"
+	MessengerYahoo   = "Yahoo! Messenger"
+)
