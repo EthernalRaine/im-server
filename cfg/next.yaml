@@ -1,13 +1,13 @@
 connection:
   mail: chimera.im
-  root: localhost
+  root: 172.20.100.187
   dblogin: im:throwaway
 encryption:
   aes: empty
   rsa: empty
 services:
   myspace: true
-  aim: false
   msn: false
-  yahoo: false
+  yahoo: false 
+  aim: true
   api: false

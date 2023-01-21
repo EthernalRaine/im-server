@@ -19,7 +19,7 @@ import (
 func MySpaceHandleClientIncomingPackages(cli *network.Client, ctx *MySpaceContext, stream string) {
 	switch {
 	case strings.HasPrefix(stream, "\\persist"):
-		MySpaceHandleClientIncomingCallbacks(cli, ctx, stream)
+		MySpaceHandleClientIncomingCallbacks(cli, stream)
 	case strings.HasPrefix(stream, "\\status"):
 		MySpaceHandleClientPacketSetStatusMessage(cli, ctx, stream)
 	case strings.HasPrefix(stream, "\\addbuddy"):
@@ -27,7 +27,7 @@ func MySpaceHandleClientIncomingPackages(cli *network.Client, ctx *MySpaceContex
 	case strings.HasPrefix(stream, "\\delbuddy"):
 		MySpaceHandleClientPacketDeleteBuddy(cli, stream)
 	case strings.HasPrefix(stream, "\\bm\\1"):
-		MySpaceHandleClientPacketBuddyInstantMessage(cli, ctx, stream)
+		MySpaceHandleClientPacketBuddyInstantMessage(cli, stream)
 	}
 }
 
@@ -35,7 +35,7 @@ func MySpaceHandleClientIncomingPackages(cli *network.Client, ctx *MySpaceContex
 //						\persist\1\sesskey\1\cmd\1\dsn\6\uid\10000\lid\11\rid\23\body\Target=mail∟FriendID=10000\final\
 //
 // this is hell; Also still missing the return for 1611 which is link callback request
-func MySpaceHandleClientIncomingCallbacks(cli *network.Client, ctx *MySpaceContext, stream string) {
+func MySpaceHandleClientIncomingCallbacks(cli *network.Client, stream string) {
 	if strings.Contains(stream, "\\persist\\1\\sesskey\\1\\cmd\\1\\dsn\\6\\uid\\10000\\lid\\11") {
 		MySpaceHandleClientCallbackNetLinkRequest(cli, stream)
 	}
@@ -112,6 +112,27 @@ func MySpaceHandleClientAuthentication(cli *network.Client, ctx *MySpaceContext)
 
 	logging.Debug("MySpace/Authentication", "RC4 Data Blob (str): %s", blob)
 	logging.Debug("MySpace/Authentication", "RC4 Data Blob (bytes): %v", []byte(blob))
+
+	meta, err := database.GetUserMetaDetailsDataByUIN(cli.ClientAccount.UIN)
+
+	/*
+		Since MySpace doesn't have any documented error codes for Ban or similar,
+		I just kick the client from the network instead.
+	*/
+
+	if err != nil {
+		logging.Error("MySpace/Authentication", "Failed to fetch MetaDetails Data! (%s)", err.Error())
+		return false
+	}
+
+	logging.Debug("MySpace/Authentication", "Meta UIN: %d", meta.UIN)
+	logging.Debug("MySpace/Authentication", "Meta AccountFlag: %d", meta.AccountFlag)
+	logging.Debug("MySpace/Authentication", "Meta UsageFlag: %d", meta.UsageFlag)
+
+	if meta.AccountFlag > 1 {
+		logging.Warn("MySpace", "User with bad Account Flags detected (Flag: %d)! Disconnecting...", meta.AccountFlag)
+		return false
+	}
 
 	if strings.Contains(string(blob), cli.ClientAccount.Mail) && strings.Contains(string(blob), string(verifybuf)) {
 
@@ -499,7 +520,7 @@ func MySpaceHandleClientPacketDeleteBuddy(cli *network.Client, stream string) {
 }
 
 // bm type 1 -> IM
-func MySpaceHandleClientPacketBuddyInstantMessage(cli *network.Client, ctx *MySpaceContext, stream string) {
+func MySpaceHandleClientPacketBuddyInstantMessage(cli *network.Client, stream string) {
 	isOnline := false
 	msg := MySpaceRetrieveKeyValue("msg", stream)
 	recv_id := MySpaceRetrieveKeyValue("t", stream)

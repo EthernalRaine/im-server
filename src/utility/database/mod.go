@@ -40,11 +40,83 @@ func SetLastLoginDate(uin int) error {
 	return err
 }
 
+func GetUserMetaDetailsDataByUIN(uin int) (network.Meta, error) {
+
+	var meta network.Meta
+
+	row, err := Query("SELECT * from meta WHERE UIN= ?", uin)
+
+	if err != nil {
+		logging.Error("Database/GetMetaDetailsData", "Failed to get userdata: %s", err.Error())
+		return meta, err
+	}
+
+	row.Next()
+	row.Scan(&meta.UIN, &meta.UsageFlag, &meta.AccountFlag)
+	row.Close()
+
+	return meta, err
+}
+
+func GetUserDetailsDataByUIN(uin int) (network.User, error) {
+
+	var user network.User
+
+	row, err := Query("SELECT * from userdetails WHERE UIN= ?", uin)
+
+	if err != nil {
+		logging.Error("Database/GetUserData", "Failed to get userdata: %s", err.Error())
+		return user, err
+	}
+
+	row.Next()
+	row.Scan(&user.UIN, &user.AvatarBlob, &user.AvatarImageType, &user.StatusMessage, &user.LastLogin, &user.SignupDate)
+	row.Close()
+
+	return user, err
+}
+
 func GetAccountDataByEmail(email string) (network.Account, error) {
 
 	var acc network.Account
 
 	row, err := Query("SELECT * from accounts WHERE Mail= ?", email)
+
+	if err != nil {
+		logging.Error("Database/GetUserData", "Failed to get userdata: %s", err.Error())
+		return acc, err
+	}
+
+	row.Next()
+	row.Scan(&acc.UIN, &acc.DisplayName, &acc.Mail, &acc.Password)
+	row.Close()
+
+	return acc, err
+}
+
+func GetAccountDataByDisplayName(displayName string) (network.Account, error) {
+
+	var acc network.Account
+
+	row, err := Query("SELECT * from accounts WHERE DisplayName= ?", displayName)
+
+	if err != nil {
+		logging.Error("Database/GetUserData", "Failed to get userdata: %s", err.Error())
+		return acc, err
+	}
+
+	row.Next()
+	row.Scan(&acc.UIN, &acc.DisplayName, &acc.Mail, &acc.Password)
+	row.Close()
+
+	return acc, err
+}
+
+func GetAccountDataByUIN(uin int) (network.Account, error) {
+
+	var acc network.Account
+
+	row, err := Query("SELECT * from accounts WHERE UIN= ?", uin)
 
 	if err != nil {
 		logging.Error("Database/GetUserData", "Failed to get userdata: %s", err.Error())

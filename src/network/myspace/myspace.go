@@ -84,6 +84,8 @@ func LogonMySpace() {
 					clientContexts = slices.Delete(clientContexts, ix, ix+1)
 				}
 			}
+
+			client.Connection.CloseConnection()
 		}()
 	}
 
