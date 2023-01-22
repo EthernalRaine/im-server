@@ -44,6 +44,8 @@ func ServiceFilterPackets(msg *network.ServiceMessage) {
 	case network.MessageType_LogOff:
 		ServiceActionBroadcastLogOffStatus(msg)
 	case network.MessageType_IM:
+	case network.MessageType_OfflineIM:
+		ServiceActionDeliverOfflineIM(msg)
 	case network.MessageType_AddFriend:
 	case network.MessageType_DelFriend:
 	default:

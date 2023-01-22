@@ -2,58 +2,19 @@ package service
 
 import (
 	"chimera/network"
-	"chimera/network/myspace"
-	"chimera/network/oscar"
 	"chimera/utility/database"
 	"chimera/utility/logging"
 )
 
 func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
-	var cli *network.Client
-	var myspace_senderctx *myspace.MySpaceContext
-	var oscar_ctx *oscar.OSCARContext
+	service := ServiceTranslateGetInterOp(msg)
 
 	for ix := 0; ix < len(network.Clients); ix++ {
-		cli = network.Clients[ix]
-
-		if cli == nil {
-			logging.Error("Service/ServiceActionBroadcastSignOnStatus", "sender offline! skipping....")
-			return
-		}
-
-		switch msg.Service {
-		case network.Service_MSIM:
-			if myspace.ClientContexts[ix].UIN == msg.Data.Sender {
-				myspace_senderctx = myspace.ClientContexts[ix]
-
-				if myspace_senderctx == nil {
-					logging.Error("Service/ServiceActionBroadcastSignOnStatus", "sender contextless! skipping....")
-					return
-				}
-			}
-
-		case network.Service_OSCAR:
-			if oscar.ClientContexts[ix].UIN == msg.Data.Sender {
-				oscar_ctx = oscar.ClientContexts[ix]
-
-				if oscar_ctx == nil {
-					logging.Error("Service/ServiceActionBroadcastSignOnStatus", "sender contextless! skipping....")
-					return
-				}
-			}
-
-		default:
-			logging.Warn("Service/ServiceActionBroadcastSignOnStatus", "unknown messenger, skipping....")
-			return
-		}
-	}
-
-	for ix := 0; ix < len(network.Clients); ix++ {
-		if network.Clients[ix].ClientAccount.UIN != cli.ClientAccount.UIN { // make sure we dont fuck the client up by sending it to ourselves
-			row, err := database.Query("SELECT * from contacts WHERE SenderUIN= ?", cli.ClientAccount.UIN)
+		if network.Clients[ix].ClientAccount.UIN != service.Client.ClientAccount.UIN { // make sure we dont fuck the client up by sending it to ourselves
+			row, err := database.Query("SELECT * from contacts WHERE SenderUIN= ?", service.Client.ClientAccount.UIN)
 
 			if err != nil {
-				logging.Error("Service/ServiceActionBroadcastSignOnStatus", "Failed to get contact list for uin: %d (%s)", cli.ClientAccount.UIN, err.Error())
+				logging.Error("Service/ServiceActionBroadcastSignOnStatus", "Failed to get contact list for uin: %d (%s)", service.Client.ClientAccount.UIN, err.Error())
 				return
 			}
 
@@ -69,7 +30,7 @@ func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
 
 				if network.Clients[ix].ClientAccount.UIN == contact.FriendUIN { // send the signon broadcast only to people on our friends list, otherwise the client will add them which is bad.
 					var count int
-					innerrow, err := database.Query("SELECT COUNT(*) from contacts WHERE SenderUIN= ? AND RecvUIN= ?", network.Clients[ix].ClientAccount.UIN, cli.ClientAccount.UIN)
+					innerrow, err := database.Query("SELECT COUNT(*) from contacts WHERE SenderUIN= ? AND RecvUIN= ?", network.Clients[ix].ClientAccount.UIN, service.Client.ClientAccount.UIN)
 
 					if err != nil {
 						logging.Error("Service/ServiceActionBroadcastSignOnStatus", "Failed to count contact list shit (%s)", err.Error())
@@ -81,7 +42,7 @@ func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
 					innerrow.Scan(&count)
 					innerrow.Close()
 
-					sender, err := database.GetUserDetailsDataByUIN(cli.ClientAccount.UIN)
+					sender, err := database.GetUserDetailsDataByUIN(service.Client.ClientAccount.UIN)
 
 					if err != nil {
 						logging.Error("Service/ServiceActionBroadcastSignOnStatus", "Unable to get Sender UserDetails! (%s)", err.Error())
@@ -99,7 +60,7 @@ func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
 						switch network.Clients[ix].ClientInfo.Service {
 						case network.Service_MSIM:
 							status, message := ServiceTranslateToMsimStatus(sender.StatusCode, sender.StatusMessage)
-							ServiceMySpaceBroadcastSignOnToRecv(network.Clients[ix], cli.ClientAccount.UIN, status, message)
+							ServiceMySpaceBroadcastSignOnToRecv(network.Clients[ix], service.Client.ClientAccount.UIN, status, message)
 						case network.Service_OSCAR:
 							//ServiceOscarBroadcastSignOn(network.Clients[ix]) // please actually implement this fruther
 						default:
@@ -110,9 +71,9 @@ func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
 						switch msg.Service {
 						case network.Service_MSIM:
 							status, _ := ServiceTranslateToMsimStatus(recv.StatusCode, recv.StatusMessage)
-							ServiceMySpaceBroadcastSignOnToSender(cli, network.Clients[ix].ClientAccount.UIN, status, recv.StatusMessage)
+							ServiceMySpaceBroadcastSignOnToSender(service.Client, network.Clients[ix].ClientAccount.UIN, status, recv.StatusMessage)
 						case network.Service_OSCAR:
-							//ServiceOscarBroadcastSignOn(network.Clients[ix]) // please actually implement this fruther
+							// please actually implement this fruther
 						default:
 							logging.Warn("Service/ServiceActionBroadcastSignOnStatus", "unknown messenger, skipping....")
 							return
@@ -128,51 +89,14 @@ func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
 }
 
 func ServiceActionBroadcastLogOffStatus(msg *network.ServiceMessage) {
-	var cli *network.Client
-	var myspace_senderctx *myspace.MySpaceContext
-	var oscar_ctx *oscar.OSCARContext
+	service := ServiceTranslateGetInterOp(msg)
 
 	for ix := 0; ix < len(network.Clients); ix++ {
-		cli = network.Clients[ix]
-
-		if cli == nil {
-			logging.Error("Service/ServiceActionBroadcastLogOffStatus", "sender offline! skipping....")
-			return
-		}
-
-		switch msg.Service {
-		case network.Service_MSIM:
-			if myspace.ClientContexts[ix].UIN == msg.Data.Sender {
-				myspace_senderctx = myspace.ClientContexts[ix]
-
-				if myspace_senderctx == nil {
-					logging.Error("Service/ServiceActionBroadcastLogOffStatus", "sender contextless! skipping....")
-					return
-				}
-			}
-
-		case network.Service_OSCAR:
-			if oscar.ClientContexts[ix].UIN == msg.Data.Sender {
-				oscar_ctx = oscar.ClientContexts[ix]
-
-				if oscar_ctx == nil {
-					logging.Error("Service/ServiceActionBroadcastLogOffStatus", "sender contextless! skipping....")
-					return
-				}
-			}
-
-		default:
-			logging.Warn("Service/ServiceActionBroadcastLogOffStatus", "unknown messenger, skipping....")
-			return
-		}
-	}
-
-	for ix := 0; ix < len(network.Clients); ix++ {
-		if network.Clients[ix].ClientAccount.UIN != cli.ClientAccount.UIN {
-			row, err := database.Query("SELECT * from contacts WHERE SenderUIN= ?", cli.ClientAccount.UIN)
+		if network.Clients[ix].ClientAccount.UIN != service.Client.ClientAccount.UIN {
+			row, err := database.Query("SELECT * from contacts WHERE SenderUIN= ?", service.Client.ClientAccount.UIN)
 
 			if err != nil {
-				logging.Error("Service/ServiceActionBroadcastLogOffStatus", "Failed to get contact list for uin: %d (%s)", cli.ClientAccount.UIN, err.Error())
+				logging.Error("Service/ServiceActionBroadcastLogOffStatus", "Failed to get contact list for uin: %d (%s)", service.Client.ClientAccount.UIN, err.Error())
 				return
 			}
 
@@ -188,7 +112,7 @@ func ServiceActionBroadcastLogOffStatus(msg *network.ServiceMessage) {
 
 				if network.Clients[ix].ClientAccount.UIN == contact.FriendUIN {
 					var count int
-					innerrow, err := database.Query("SELECT COUNT(*) from contacts WHERE SenderUIN= ? AND RecvUIN= ?", network.Clients[ix].ClientAccount.UIN, cli.ClientAccount.UIN)
+					innerrow, err := database.Query("SELECT COUNT(*) from contacts WHERE SenderUIN= ? AND RecvUIN= ?", network.Clients[ix].ClientAccount.UIN, service.Client.ClientAccount.UIN)
 
 					if err != nil {
 						logging.Error("Service/ServiceActionBroadcastLogOffStatus", "Failed to count contact list shit (%s)", err.Error())
@@ -203,10 +127,10 @@ func ServiceActionBroadcastLogOffStatus(msg *network.ServiceMessage) {
 					if count > 0 {
 						switch network.Clients[ix].ClientInfo.Service {
 						case network.Service_MSIM:
-							status, message := ServiceTranslateToMsimStatus(StatusCode_Offline, myspace_senderctx.Status.Message)
-							ServiceMySpaceBroadcastSignOnToRecv(network.Clients[ix], cli.ClientAccount.UIN, status, message)
+							_, message := ServiceTranslateToMsimStatus(StatusCode_Offline, service.MSIM_Context.Status.Message)
+							ServiceMySpaceBroadcastLogOff(network.Clients[ix], service.Client.ClientAccount.UIN, message)
 						case network.Service_OSCAR:
-							//ServiceOscarBroadcastSignOn(network.Clients[ix]) // please actually implement this fruther
+							// please actually implement this fruther
 						default:
 							logging.Warn("Service/ServiceActionBroadcastLogOffStatus", "unknown messenger, skipping....")
 							return
@@ -218,4 +142,51 @@ func ServiceActionBroadcastLogOffStatus(msg *network.ServiceMessage) {
 			row.Close()
 		}
 	}
+}
+
+func ServiceActionDeliverOfflineIM(msg *network.ServiceMessage) {
+	service := ServiceTranslateGetInterOp(msg)
+
+	//(17, 15, 1669828262515, '<p><f f=\'Times\' h=\'16\'><c v=\'black\'><b v=\'white\'>test</1b></1c></1f></1p>'),
+
+	row, err := database.Query("SELECT * from offlinemsgs WHERE RecvUIN= ?", service.Client.ClientAccount.UIN)
+
+	if err != nil {
+		logging.Error("Service/ServiceActionDeliverOfflineIM", "Failed to get offline messages list for uin: %d (%s)", service.Client.ClientAccount.UIN, err.Error())
+		return
+	}
+
+	for row.Next() {
+		var message network.OfflineMessage
+		var discardedMessageAttributes string
+		err = row.Scan(&message.SenderUIN, &message.RecvUIN, &message.MessageDate, &message.MessageContent, &discardedMessageAttributes)
+
+		if err != nil {
+			logging.Error("Service/ServiceActionDeliverOfflineIM", "Failed to scan offline messages list of uin: %d (%s)", service.Client.ClientAccount.UIN, err.Error())
+			row.Close()
+			return
+		}
+
+		/* for now i will just pass this through as is, please implment a tokenizer for MessageAttributes*/
+		switch msg.Service {
+		case network.Service_MSIM:
+			ServiceMySpaceDeliverOfflineIM(service.Client, service.MSIM_Context, message)
+		case network.Service_OSCAR:
+			// please actually implement this fruther
+		default:
+			logging.Warn("Service/ServiceActionDeliverOfflineIM", "unknown messenger, skipping....")
+			return
+		}
+
+	}
+	row.Close()
+
+	row, err = database.Query("DELETE from offlinemsgs WHERE RecvUIN= ?", service.Client.ClientAccount.UIN)
+
+	if err != nil {
+		logging.Error("Service/ServiceActionDeliverOfflineIM", "Failed to delete offline messages for uin: %d (%s)", service.Client.ClientAccount.UIN, err.Error())
+		return
+	}
+
+	row.Close()
 }

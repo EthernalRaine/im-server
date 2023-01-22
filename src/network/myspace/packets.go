@@ -214,41 +214,15 @@ func MySpaceHandleClientBroadcastLogoffStatus(cli *network.Client, ctx *MySpaceC
 }
 
 func MySpaceHandleClientOfflineMessagesDelivery(cli *network.Client, ctx *MySpaceContext) {
-	row, err := database.Query("SELECT * from offlinemsgs WHERE RecvUIN= ?", cli.ClientAccount.UIN)
-
-	if err != nil {
-		logging.Error("MySpace/MySpaceHandleClientOfflineMessagesDelivery", "Failed to get offline messages list for uin: %d (%s)", cli.ClientAccount.UIN, err.Error())
-		return
+	message := network.ServiceMessage{
+		Service: network.Service_MSIM,
+		Type:    network.MessageType_OfflineIM,
+		Data: network.ServiceData{
+			Sender: cli.ClientAccount.UIN,
+		},
 	}
 
-	for row.Next() {
-		var message network.OfflineMessage
-		err = row.Scan(&message.SenderUIN, &message.RecvUIN, &message.MessageDate, &message.MessageContent)
-
-		if err != nil {
-			logging.Error("MySpace/MySpaceHandleClientOfflineMessagesDelivery", "Failed to scan offline messages list of uin: %d (%s)", cli.ClientAccount.UIN, err.Error())
-			row.Close()
-			return
-		}
-
-		cli.Connection.WriteTraffic(MySpaceBuildPackage([]MySpaceDataPair{
-			MySpaceNewDataInt("bm", 1),
-			MySpaceNewDataInt("sesskey", ctx.SessionKey),
-			MySpaceNewDataInt("f", message.SenderUIN),
-			MySpaceNewDataInt("date", message.MessageDate),
-			MySpaceNewDataGeneric("msg", message.MessageContent),
-		}))
-	}
-	row.Close()
-
-	row, err = database.Query("DELETE from offlinemsgs WHERE RecvUIN= ?", cli.ClientAccount.UIN)
-
-	if err != nil {
-		logging.Error("MySpace/MySpaceHandleClientOfflineMessagesDelivery", "Failed to delete offline messages for uin: %d (%s)", cli.ClientAccount.UIN, err.Error())
-		return
-	}
-
-	row.Close()
+	network.MessageCache = append(network.MessageCache, &message)
 
 	logging.System("MySpace", "Delivered Offline Messages for UIN: %d / SN: %s", cli.ClientAccount.UIN, cli.ClientAccount.DisplayName)
 }

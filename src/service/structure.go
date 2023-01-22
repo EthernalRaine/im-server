@@ -1,5 +1,17 @@
 package service
 
+import (
+	"chimera/network"
+	"chimera/network/myspace"
+	"chimera/network/oscar"
+)
+
+type ServiceInterOp struct {
+	Client        *network.Client
+	MSIM_Context  *myspace.MySpaceContext
+	OSCAR_Context *oscar.OSCARContext
+}
+
 const (
 	StatusCode_Offline      = 0x0000
 	StatusCode_Hidden       = 0x0001

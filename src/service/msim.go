@@ -25,3 +25,21 @@ func ServiceMySpaceBroadcastSignOnToSender(sender_cli *network.Client, recv_uin 
 		}))
 	}
 }
+
+func ServiceMySpaceBroadcastLogOff(recv_cli *network.Client, sender_uin int, sender_statusmsg string) {
+	recv_cli.Connection.WriteTraffic(myspace.MySpaceBuildPackage([]myspace.MySpaceDataPair{
+		myspace.MySpaceNewDataInt("bm", 100),
+		myspace.MySpaceNewDataInt("f", sender_uin),
+		myspace.MySpaceNewDataGeneric("msg", fmt.Sprintf("|s|0|ss|%s", sender_statusmsg)),
+	}))
+}
+
+func ServiceMySpaceDeliverOfflineIM(sender_cli *network.Client, sender_ctx *myspace.MySpaceContext, message network.OfflineMessage) {
+	sender_cli.Connection.WriteTraffic(myspace.MySpaceBuildPackage([]myspace.MySpaceDataPair{
+		myspace.MySpaceNewDataInt("bm", 1),
+		myspace.MySpaceNewDataInt("sesskey", sender_ctx.SessionKey),
+		myspace.MySpaceNewDataInt("f", message.SenderUIN),
+		myspace.MySpaceNewDataInt("date", message.MessageDate),
+		myspace.MySpaceNewDataGeneric("msg", message.MessageContent),
+	}))
+}

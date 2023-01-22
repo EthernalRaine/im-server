@@ -80,8 +80,9 @@ const (
 	MessageType_SignOn    = 0x0002
 	MessageType_LogOff    = 0x0003
 	MessageType_IM        = 0x0004
-	MessageType_AddFriend = 0x0005
-	MessageType_DelFriend = 0x0006
+	MessageType_OfflineIM = 0x0005
+	MessageType_AddFriend = 0x0006
+	MessageType_DelFriend = 0x0007
 )
 
 // Meta

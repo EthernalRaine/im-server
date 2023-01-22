@@ -1,8 +1,53 @@
 package service
 
 import (
+	"chimera/network"
+	"chimera/network/myspace"
+	"chimera/network/oscar"
+	"chimera/utility/logging"
 	"fmt"
 )
+
+func ServiceTranslateGetInterOp(msg *network.ServiceMessage) ServiceInterOp {
+	var interop ServiceInterOp
+
+	for ix := 0; ix < len(network.Clients); ix++ {
+		interop.Client = network.Clients[ix]
+
+		if interop.Client == nil {
+			logging.Error("Service/ServiceTranslateGetInterOp", "sender offline! skipping....")
+			return ServiceInterOp{}
+		}
+
+		switch msg.Service {
+		case network.Service_MSIM:
+			if myspace.ClientContexts[ix].UIN == msg.Data.Sender {
+				interop.MSIM_Context = myspace.ClientContexts[ix]
+
+				if interop.MSIM_Context == nil {
+					logging.Error("Service/ServiceTranslateGetInterOp", "sender contextless! skipping....")
+					return ServiceInterOp{}
+				}
+			}
+
+		case network.Service_OSCAR:
+			if oscar.ClientContexts[ix].UIN == msg.Data.Sender {
+				interop.OSCAR_Context = oscar.ClientContexts[ix]
+
+				if interop.OSCAR_Context == nil {
+					logging.Error("Service/ServiceTranslateGetInterOp", "sender contextless! skipping....")
+					return ServiceInterOp{}
+				}
+			}
+
+		default:
+			logging.Warn("Service/ServiceTranslateGetInterOp", "unknown messenger, skipping....")
+			return ServiceInterOp{}
+		}
+	}
+
+	return ServiceInterOp{}
+}
 
 func ServiceTranslateToMsimStatus(code int, message string) (int, string) {
 
