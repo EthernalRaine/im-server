@@ -8,11 +8,20 @@ import (
 
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+
+	_ "embed"
 )
 
-func GetBuild() string {
+//go:embed version
+var version string
+
+func GetBuildInfo() string {
+	return fmt.Sprintf("Milestone 1 - Build %s", version)
+}
+
+func GetBuildSpecifics() string {
 	// Specifier (Major.Minor.Push.Hotfix)
-	return "NextAIM Alpha 2 [Codename: Dragon]"
+	return "feat/bridge_v2"
 }
 
 func SanitizeString(input string) string {

@@ -177,7 +177,6 @@ func MySpaceHandleClientLogoutRequest(data string) bool {
 }
 
 func MySpaceHandleClientBroadcastSigninStatus(cli *network.Client, ctx *MySpaceContext) {
-
 	message := network.ServiceMessage{
 		Service: network.Service_MSIM,
 		Type:    network.MessageType_SignOn,
@@ -201,51 +200,15 @@ func MySpaceHandleClientKeepalive(cli *network.Client) {
 }
 
 func MySpaceHandleClientBroadcastLogoffStatus(cli *network.Client, ctx *MySpaceContext) {
-	for ix := 0; ix < len(network.Clients); ix++ {
-		if network.Clients[ix].ClientAccount.UIN != cli.ClientAccount.UIN {
-			row, err := database.Query("SELECT * from contacts WHERE SenderUIN= ?", cli.ClientAccount.UIN)
-
-			if err != nil {
-				logging.Error("MySpace/MySpaceHandleClientBroadcastLogoffStatus", "Failed to get contact list for uin: %d (%s)", cli.ClientAccount.UIN, err.Error())
-				return
-			}
-
-			for row.Next() {
-				var contact network.Contact
-				err = row.Scan(&contact.SenderUIN, &contact.FriendUIN, &contact.Reason)
-
-				if err != nil {
-					logging.Error("MySpace/MySpaceHandleClientBroadcastLogoffStatus", "Failed to scan contact lists (%s)", err.Error())
-					row.Close()
-					return
-				}
-
-				if network.Clients[ix].ClientAccount.UIN == contact.FriendUIN {
-					var count int
-					innerrow, err := database.Query("SELECT COUNT(*) from contacts WHERE SenderUIN= ? AND RecvUIN= ?", network.Clients[ix].ClientAccount.UIN, cli.ClientAccount.UIN)
-
-					if err != nil {
-						logging.Error("MySpace/MySpaceHandleClientBroadcastLogoffStatus", "Failed to count contact list shit (%s)", err.Error())
-						row.Close()
-						return
-					}
-
-					innerrow.Next()
-					innerrow.Scan(&count)
-					innerrow.Close()
-
-					if count > 0 {
-						network.Clients[ix].Connection.WriteTraffic(MySpaceBuildPackage([]MySpaceDataPair{
-							MySpaceNewDataInt("bm", 100),
-							MySpaceNewDataInt("f", cli.ClientAccount.UIN),
-							MySpaceNewDataGeneric("msg", fmt.Sprintf("|s|0|ss|%s", ctx.Status.Message)),
-						}))
-					}
-				}
-			}
-			row.Close()
-		}
+	message := network.ServiceMessage{
+		Service: network.Service_MSIM,
+		Type:    network.MessageType_LogOff,
+		Data: network.ServiceData{
+			Sender: cli.ClientAccount.UIN,
+		},
 	}
+
+	network.MessageCache = append(network.MessageCache, &message)
 
 	logging.System("MySpace", "Broadcasted Logoff Status for UIN: %d / SN: %s", cli.ClientAccount.UIN, cli.ClientAccount.DisplayName)
 }

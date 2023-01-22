@@ -3,26 +3,56 @@
 usage()
 {
     echo "===========================HELP============================"
-    echo "build.sh [-b build configuration (full/stripped)]"
+    echo "build.sh [-s verbosity configuration (silent/verbose)] [-b build configuration (full/stripped)]"
     exit 1
 }
 
-while getopts 'b:h?' opt; do
+while getopts 's:b:h?' opt; do
     case "$opt" in
+        s)
+            mode=$OPTARG
+            ;;
         b)
             echo "running application go build (${OPTARG})"
+            
+            oldnum=`cat version`  
+            newnum=`expr $oldnum + 1`
+            sed -i "s/$oldnum\$/$newnum/g" version
+            
+            rm src/utility/version
+            cp version src/utility/
 
             cd src
 
             if [[ $OPTARG = "stripped" ]]
             then
-               go build -o ../build/im-next -ldflags '-s' -x  -v
+                if [[ $mode = "silent" ]]
+                then
+                    go build -o ../build/im-next -ldflags '-s'
+                fi
+
+                if [[ $mode = "verbose" ]]
+                then
+                    go build -o ../build/im-next -ldflags '-s' -x -v
+                fi
             fi
 
             if [[ $OPTARG = "full" ]]
             then
-                go build -o ../build/im-next -x -v
+                if [[ $mode = "silent" ]]
+                then
+                    go build -o ../build/im-next
+                fi
+
+                if [[ $mode = "verbose" ]]
+                then
+                    go build -o ../build/im-next -x -v
+                fi
             fi
+
+            cd utility
+            rm version
+            echo "placeholder" > version
 
             echo "done building."
             echo

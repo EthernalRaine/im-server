@@ -126,3 +126,96 @@ func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
 		}
 	}
 }
+
+func ServiceActionBroadcastLogOffStatus(msg *network.ServiceMessage) {
+	var cli *network.Client
+	var myspace_senderctx *myspace.MySpaceContext
+	var oscar_ctx *oscar.OSCARContext
+
+	for ix := 0; ix < len(network.Clients); ix++ {
+		cli = network.Clients[ix]
+
+		if cli == nil {
+			logging.Error("Service/ServiceActionBroadcastLogOffStatus", "sender offline! skipping....")
+			return
+		}
+
+		switch msg.Service {
+		case network.Service_MSIM:
+			if myspace.ClientContexts[ix].UIN == msg.Data.Sender {
+				myspace_senderctx = myspace.ClientContexts[ix]
+
+				if myspace_senderctx == nil {
+					logging.Error("Service/ServiceActionBroadcastLogOffStatus", "sender contextless! skipping....")
+					return
+				}
+			}
+
+		case network.Service_OSCAR:
+			if oscar.ClientContexts[ix].UIN == msg.Data.Sender {
+				oscar_ctx = oscar.ClientContexts[ix]
+
+				if oscar_ctx == nil {
+					logging.Error("Service/ServiceActionBroadcastLogOffStatus", "sender contextless! skipping....")
+					return
+				}
+			}
+
+		default:
+			logging.Warn("Service/ServiceActionBroadcastLogOffStatus", "unknown messenger, skipping....")
+			return
+		}
+	}
+
+	for ix := 0; ix < len(network.Clients); ix++ {
+		if network.Clients[ix].ClientAccount.UIN != cli.ClientAccount.UIN {
+			row, err := database.Query("SELECT * from contacts WHERE SenderUIN= ?", cli.ClientAccount.UIN)
+
+			if err != nil {
+				logging.Error("Service/ServiceActionBroadcastLogOffStatus", "Failed to get contact list for uin: %d (%s)", cli.ClientAccount.UIN, err.Error())
+				return
+			}
+
+			for row.Next() {
+				var contact network.Contact
+				err = row.Scan(&contact.SenderUIN, &contact.FriendUIN, &contact.Reason)
+
+				if err != nil {
+					logging.Error("Service/ServiceActionBroadcastLogOffStatus", "Failed to scan contact lists (%s)", err.Error())
+					row.Close()
+					return
+				}
+
+				if network.Clients[ix].ClientAccount.UIN == contact.FriendUIN {
+					var count int
+					innerrow, err := database.Query("SELECT COUNT(*) from contacts WHERE SenderUIN= ? AND RecvUIN= ?", network.Clients[ix].ClientAccount.UIN, cli.ClientAccount.UIN)
+
+					if err != nil {
+						logging.Error("Service/ServiceActionBroadcastLogOffStatus", "Failed to count contact list shit (%s)", err.Error())
+						row.Close()
+						return
+					}
+
+					innerrow.Next()
+					innerrow.Scan(&count)
+					innerrow.Close()
+
+					if count > 0 {
+						switch network.Clients[ix].ClientInfo.Service {
+						case network.Service_MSIM:
+							status, message := ServiceTranslateToMsimStatus(StatusCode_Offline, myspace_senderctx.Status.Message)
+							ServiceMySpaceBroadcastSignOnToRecv(network.Clients[ix], cli.ClientAccount.UIN, status, message)
+						case network.Service_OSCAR:
+							//ServiceOscarBroadcastSignOn(network.Clients[ix]) // please actually implement this fruther
+						default:
+							logging.Warn("Service/ServiceActionBroadcastLogOffStatus", "unknown messenger, skipping....")
+							return
+						}
+
+					}
+				}
+			}
+			row.Close()
+		}
+	}
+}
