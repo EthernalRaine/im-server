@@ -12,6 +12,7 @@ type Client struct {
 }
 
 type Details struct {
+	Service   int
 	Messenger string
 	Build     string
 	Protocol  string
@@ -28,6 +29,7 @@ type User struct {
 	UIN             int
 	AvatarBlob      string
 	AvatarImageType string
+	StatusCode      int
 	StatusMessage   string
 	LastLogin       int64
 	SignupDate      int
@@ -52,7 +54,35 @@ type Meta struct {
 	AccountFlag int
 }
 
+type ServiceMessage struct {
+	Service int
+	Type    int
+	Data    ServiceData
+}
+
+type ServiceData struct {
+	Sender int
+	Recv   int
+	Raw    []byte
+}
+
 var Clients []*Client
+var MessageCache []*ServiceMessage
+
+// Service
+const (
+	Service_MSIM  = 0x0001
+	Service_OSCAR = 0x0002
+)
+
+const (
+	MessageType_Status    = 0x0001
+	MessageType_SignOn    = 0x0002
+	MessageType_LogOff    = 0x0003
+	MessageType_IM        = 0x0004
+	MessageType_AddFriend = 0x0005
+	MessageType_DelFriend = 0x0006
+)
 
 // Meta
 const (

@@ -1,6 +1,7 @@
 package oscar
 
 type OSCARContext struct {
+	UIN            int
 	ServerSequence uint16
 	ClientSequence uint16
 	Challenge      []byte
@@ -67,4 +68,4 @@ var supportedFoodgroups []uint16 = []uint16{
 	FoodgroupFEEDBAG,
 }
 
-var clientContexts []*OSCARContext
+var ClientContexts []*OSCARContext

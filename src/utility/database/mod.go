@@ -70,7 +70,7 @@ func GetUserDetailsDataByUIN(uin int) (network.User, error) {
 	}
 
 	row.Next()
-	row.Scan(&user.UIN, &user.AvatarBlob, &user.AvatarImageType, &user.StatusMessage, &user.LastLogin, &user.SignupDate)
+	row.Scan(&user.UIN, &user.AvatarBlob, &user.AvatarImageType, &user.StatusCode, &user.StatusMessage, &user.LastLogin, &user.SignupDate)
 	row.Close()
 
 	return user, err

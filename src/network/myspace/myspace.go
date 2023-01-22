@@ -46,7 +46,7 @@ func LogonMySpace() {
 			}
 
 			network.Clients = append(network.Clients, &client)
-			clientContexts = append(clientContexts, &context)
+			ClientContexts = append(ClientContexts, &context)
 
 			MySpaceHandleClientBroadcastSigninStatus(&client, &context)
 			MySpaceHandleClientOfflineMessagesDelivery(&client, &context)
@@ -78,10 +78,10 @@ func LogonMySpace() {
 				}
 			}
 
-			for ix := 0; ix < len(clientContexts); ix++ {
-				if clientContexts[ix].SessionKey == context.SessionKey {
+			for ix := 0; ix < len(ClientContexts); ix++ {
+				if ClientContexts[ix].SessionKey == context.SessionKey {
 					logging.Debug("MySpace/Service", "Removing from client from Context List...")
-					clientContexts = slices.Delete(clientContexts, ix, ix+1)
+					ClientContexts = slices.Delete(ClientContexts, ix, ix+1)
 				}
 			}
 

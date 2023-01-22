@@ -6,6 +6,7 @@ type MySpaceDataPair struct {
 }
 
 type MySpaceContext struct {
+	UIN        int
 	Nonce      string
 	SessionKey int
 	Status     MySpaceStatus
@@ -25,4 +26,4 @@ type MySpaceUserDetails struct {
 	Location      string
 }
 
-var clientContexts []*MySpaceContext
+var ClientContexts []*MySpaceContext

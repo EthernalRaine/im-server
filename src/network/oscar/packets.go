@@ -289,7 +289,7 @@ func OSCARHandleClientBUCPLoginRequest(client *network.Client, context *OSCARCon
 		data = append(data, OSCARDeserializeTLV(emailTlv)...)
 		data = append(data, OSCARDeserializeTLV(pwdChangeUrlTlv)...)
 
-		clientContexts = append(clientContexts, context)
+		ClientContexts = append(ClientContexts, context)
 
 	} else {
 		// i fall back on SNTLV here since client.ClientAccount.DisplayName could be empty if the fetch failed (i.e wrong username)
@@ -326,7 +326,7 @@ func OSCARHandleClientBOSFrameSignOn(client *network.Client, context *OSCARConte
 		return
 	}
 
-	for _, clientContext := range clientContexts {
+	for _, clientContext := range ClientContexts {
 		if bytes.Equal(clientContext.BOSCookie, cookieTlv.Value) {
 			logging.Debug("OSCAR/BOS Frame SignOn", "Matching cookie attempt found")
 			clientContext.ServerSequence = context.ServerSequence
