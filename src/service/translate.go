@@ -12,11 +12,13 @@ func ServiceTranslateGetInterOp(msg *network.ServiceMessage) ServiceInterOp {
 	var interop ServiceInterOp
 
 	for ix := 0; ix < len(network.Clients); ix++ {
-		interop.Client = network.Clients[ix]
+		if network.Clients[ix].ClientAccount.UIN == msg.Data.Sender {
+			interop.Client = network.Clients[ix]
 
-		if interop.Client == nil {
-			logging.Error("Service/ServiceTranslateGetInterOp", "sender offline! skipping....")
-			return ServiceInterOp{}
+			if interop.Client == nil {
+				logging.Error("Service/ServiceTranslateGetInterOp", "sender offline! skipping....")
+				return ServiceInterOp{}
+			}
 		}
 
 		switch msg.Service {
@@ -46,7 +48,7 @@ func ServiceTranslateGetInterOp(msg *network.ServiceMessage) ServiceInterOp {
 		}
 	}
 
-	return ServiceInterOp{}
+	return interop
 }
 
 func ServiceTranslateToMsimStatus(code int, message string) (int, string) {

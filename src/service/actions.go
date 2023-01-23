@@ -9,6 +9,13 @@ import (
 func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
 	service := ServiceTranslateGetInterOp(msg)
 
+	logging.Debug("Service/ServiceActionBroadcastSignOnStatus", "interop: %+v", service)
+
+	if service.Client == nil {
+		logging.Error("Service/ServiceActionBroadcastSignOnStatus", "failed to find client!")
+		return
+	}
+
 	for ix := 0; ix < len(network.Clients); ix++ {
 		if network.Clients[ix].ClientAccount.UIN != service.Client.ClientAccount.UIN { // make sure we dont fuck the client up by sending it to ourselves
 			row, err := database.Query("SELECT * from contacts WHERE SenderUIN= ?", service.Client.ClientAccount.UIN)
@@ -91,6 +98,13 @@ func ServiceActionBroadcastSignOnStatus(msg *network.ServiceMessage) {
 func ServiceActionBroadcastLogOffStatus(msg *network.ServiceMessage) {
 	service := ServiceTranslateGetInterOp(msg)
 
+	logging.Debug("Service/ServiceActionBroadcastLogOffStatus", "interop: %+v", service)
+
+	if service.Client == nil {
+		logging.Error("Service/ServiceActionBroadcastLogOffStatus", "failed to find client!")
+		return
+	}
+
 	for ix := 0; ix < len(network.Clients); ix++ {
 		if network.Clients[ix].ClientAccount.UIN != service.Client.ClientAccount.UIN {
 			row, err := database.Query("SELECT * from contacts WHERE SenderUIN= ?", service.Client.ClientAccount.UIN)
@@ -146,6 +160,13 @@ func ServiceActionBroadcastLogOffStatus(msg *network.ServiceMessage) {
 
 func ServiceActionDeliverOfflineIM(msg *network.ServiceMessage) {
 	service := ServiceTranslateGetInterOp(msg)
+
+	logging.Debug("Service/ServiceActionDeliverOfflineIM", "interop: %+v", service)
+
+	if service.Client == nil {
+		logging.Error("Service/ServiceActionDeliverOfflineIM", "failed to find client!")
+		return
+	}
 
 	//(17, 15, 1669828262515, '<p><f f=\'Times\' h=\'16\'><c v=\'black\'><b v=\'white\'>test</1b></1c></1f></1p>'),
 
