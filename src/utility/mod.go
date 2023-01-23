@@ -16,6 +16,7 @@ import (
 var version string
 
 func GetBuildInfo() string {
+	//(milestone)_(codename).(branch).b(build)
 	return fmt.Sprintf("Milestone 1 - Build %s", version)
 }
 

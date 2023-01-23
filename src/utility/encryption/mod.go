@@ -1,23 +1,16 @@
 package encryption
 
 import (
+	"bytes"
 	"chimera/utility/logging"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/md5"
+	"crypto/des"
 	"crypto/rand"
 	"crypto/rc4"
 	"encoding/base64"
-	"encoding/hex"
 	"io"
 )
-
-// MD5
-
-func GetMD5Hash(text string) string {
-	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
-}
 
 func SwapRC4State(pwd []byte, data []byte) []byte {
 	c, err := rc4.NewCipher(pwd)
@@ -91,4 +84,45 @@ func DecryptAES(key string, secure string) string {
 	stream.XORKeyStream(cipherText, cipherText)
 
 	return string(cipherText)
+}
+
+func EncryptTDES(data, key []byte) ([]byte, error) {
+	block, err := des.NewTripleDESCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	ciphertext := key
+	iv := ciphertext[:des.BlockSize]
+	origData := pKCS5Padding(data, block.BlockSize())
+	mode := cipher.NewCBCEncrypter(block, iv)
+	encrypted := make([]byte, len(origData))
+	mode.CryptBlocks(encrypted, origData)
+	return encrypted, nil
+}
+
+func DecryptTDES(data, key []byte) ([]byte, error) {
+	block, err := des.NewTripleDESCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	ciphertext := key
+	iv := ciphertext[:des.BlockSize]
+
+	decrypter := cipher.NewCBCDecrypter(block, iv)
+	decrypted := make([]byte, len(data))
+	decrypter.CryptBlocks(decrypted, data)
+	decrypted = pKCS5UnPadding(decrypted)
+	return decrypted, nil
+}
+
+func pKCS5Padding(ciphertext []byte, blockSize int) []byte {
+	padding := blockSize - len(ciphertext)%blockSize
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(ciphertext, padtext...)
+}
+
+func pKCS5UnPadding(origData []byte) []byte {
+	length := len(origData)
+	unpadding := int(origData[length-1])
+	return origData[:(length - unpadding)]
 }

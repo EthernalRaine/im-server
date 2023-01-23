@@ -66,6 +66,14 @@ type ServiceData struct {
 	Raw    []byte
 }
 
+type EncryptionAttributes struct {
+	IToken string
+	SDate  string
+	RSeed  string
+	GOwner string
+	NUser  string
+}
+
 var Clients []*Client
 var MessageCache []*ServiceMessage
 

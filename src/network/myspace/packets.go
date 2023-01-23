@@ -6,6 +6,7 @@ import (
 	"chimera/utility/database"
 	"chimera/utility/encryption"
 	"chimera/utility/logging"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
@@ -69,9 +70,46 @@ func MySpaceHandleClientAuthentication(cli *network.Client, ctx *MySpaceContext)
 	logging.Debug("MySpace/Authentication", "NetworkAccount Mail: %s", cli.ClientAccount.Mail)
 	logging.Debug("MySpace/Authentication", "NetworkAccount PW: %v", []byte(cli.ClientAccount.Password))
 
-	/*todo: implement AES, again...*/
+	/*todo: implement TDES in API*/
+	/*
+		New password encryption scheme: 3DES with front and back padding
+		Encryption Key: InviteToken + SignupDate + RandomSeed
+		Padding Front: MD5(RandomSeed + GiftOwner)
+		Padding Back: MD5(SignupDate + UIN (NewUser))
+	*/
 
-	logging.Debug("MySpace/Authentication", "AES Password Stuff: %v", []byte(cli.ClientAccount.Password))
+	var attribute network.EncryptionAttributes
+	attribute, err = database.GetEncryptionAttributes(cli.ClientAccount.UIN)
+
+	if err != nil {
+		logging.Error("MySpace/Authentication", "Failed to fetch encryption attributes! (%s)", err.Error())
+		return false
+	}
+
+	key := fmt.Sprintf("%s%s%s", attribute.IToken, attribute.SDate, attribute.RSeed)
+	front_pad := md5.Sum([]byte(fmt.Sprintf("%s%s", attribute.RSeed, attribute.GOwner)))
+	back_pad := md5.Sum([]byte(fmt.Sprintf("%s%s", attribute.SDate, attribute.NUser)))
+
+	decrypted_pw, err := encryption.DecryptTDES([]byte(cli.ClientAccount.Password), []byte(key))
+
+	if err != nil {
+		logging.Error("MySpace/Authentication", "Failed to decrypt tdes! (%s)", err.Error())
+		return false
+	}
+
+	pad_stripped_pw := strings.TrimRight(string(decrypted_pw), string(back_pad[:]))
+	pad_stripped_pw = strings.TrimLeft(pad_stripped_pw, string(back_pad[:]))
+
+	logging.Debug("MySpace/Authentication", "TDES ITK: %v", []byte(attribute.IToken))
+	logging.Debug("MySpace/Authentication", "TDES SDT: %v", []byte(attribute.SDate))
+	logging.Debug("MySpace/Authentication", "TDES RSD: %v", []byte(attribute.RSeed))
+	logging.Debug("MySpace/Authentication", "TDES GWR: %v", []byte(attribute.GOwner))
+	logging.Debug("MySpace/Authentication", "TDES NUD: %v", []byte(attribute.NUser))
+	logging.Debug("MySpace/Authentication", "TDES FTD: %v", (front_pad))
+	logging.Debug("MySpace/Authentication", "TDES BTD: %v", (back_pad))
+	logging.Debug("MySpace/Authentication", "TDES EKY: %v", []byte(key))
+	logging.Debug("MySpace/Authentication", "TDES E-PWD : %v", []byte(cli.ClientAccount.Password))
+	logging.Debug("MySpace/Authentication", "TDES D-PWD : %v", []byte(decrypted_pw))
 
 	verifybuf := make([]byte, 32)
 	noncebuf := make([]byte, 32)
@@ -82,7 +120,7 @@ func MySpaceHandleClientAuthentication(cli *network.Client, ctx *MySpaceContext)
 		verifybuf[i] = challenge[i]
 	}
 
-	pwdbytes := utility.ConvertToUTF16LE(cli.ClientAccount.Password)
+	pwdbytes := utility.ConvertToUTF16LE(pad_stripped_pw)
 	hasher := sha1.New()
 	hasher.Write(pwdbytes)
 	stage1 := hasher.Sum(nil)
@@ -129,7 +167,7 @@ func MySpaceHandleClientAuthentication(cli *network.Client, ctx *MySpaceContext)
 	logging.Debug("MySpace/Authentication", "Meta AccountFlag: %d", meta.AccountFlag)
 	logging.Debug("MySpace/Authentication", "Meta UsageFlag: %d", meta.UsageFlag)
 
-	if meta.AccountFlag > 1 {
+	if meta.AccountFlag > 1 || meta.AccountFlag < 1 {
 		logging.Warn("MySpace", "User with bad Account Flags detected (Flag: %d)! Disconnecting...", meta.AccountFlag)
 		return false
 	}
@@ -176,7 +214,7 @@ func MySpaceHandleClientLogoutRequest(data string) bool {
 	return strings.HasPrefix(data, "\\logout")
 }
 
-func MySpaceHandleClientBroadcastSigninStatus(cli *network.Client, ctx *MySpaceContext) {
+func MySpaceHandleClientBroadcastSigninStatus(cli *network.Client) {
 	message := network.ServiceMessage{
 		Service: network.Service_MSIM,
 		Type:    network.MessageType_SignOn,
@@ -199,7 +237,7 @@ func MySpaceHandleClientKeepalive(cli *network.Client) {
 	}
 }
 
-func MySpaceHandleClientBroadcastLogoffStatus(cli *network.Client, ctx *MySpaceContext) {
+func MySpaceHandleClientBroadcastLogoffStatus(cli *network.Client) {
 	message := network.ServiceMessage{
 		Service: network.Service_MSIM,
 		Type:    network.MessageType_LogOff,
@@ -213,7 +251,7 @@ func MySpaceHandleClientBroadcastLogoffStatus(cli *network.Client, ctx *MySpaceC
 	logging.System("MySpace", "Broadcasted Logoff Status for UIN: %d / SN: %s", cli.ClientAccount.UIN, cli.ClientAccount.DisplayName)
 }
 
-func MySpaceHandleClientOfflineMessagesDelivery(cli *network.Client, ctx *MySpaceContext) {
+func MySpaceHandleClientOfflineMessagesDelivery(cli *network.Client) {
 	message := network.ServiceMessage{
 		Service: network.Service_MSIM,
 		Type:    network.MessageType_OfflineIM,

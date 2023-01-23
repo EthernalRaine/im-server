@@ -48,8 +48,8 @@ func LogonMySpace() {
 			network.Clients = append(network.Clients, &client)
 			ClientContexts = append(ClientContexts, &context)
 
-			MySpaceHandleClientBroadcastSigninStatus(&client, &context)
-			MySpaceHandleClientOfflineMessagesDelivery(&client, &context)
+			MySpaceHandleClientBroadcastSigninStatus(&client)
+			MySpaceHandleClientOfflineMessagesDelivery(&client)
 
 			for {
 				stream, err := client.Connection.ReadTraffic()
@@ -67,7 +67,7 @@ func LogonMySpace() {
 				}
 			}
 
-			MySpaceHandleClientBroadcastLogoffStatus(&client, &context)
+			MySpaceHandleClientBroadcastLogoffStatus(&client)
 
 			logging.Info("MySpace", "Client signed out! (UIN: %d, SN: %s)", client.ClientAccount.UIN, client.ClientAccount.DisplayName)
 

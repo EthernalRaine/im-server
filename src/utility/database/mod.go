@@ -6,6 +6,7 @@ import (
 	"chimera/utility/logging"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -128,4 +129,57 @@ func GetAccountDataByUIN(uin int) (network.Account, error) {
 	row.Close()
 
 	return acc, err
+}
+
+func GetEncryptionAttributes(uin int) (network.EncryptionAttributes, error) {
+
+	var enc network.EncryptionAttributes
+
+	row, err := database.Query("SELECT InviteToken FROM invites WHERE NewUser= ?", uin)
+
+	if err != nil {
+		logging.Error("MySpace/Authentication", "Failed to fetch invite token! (%s)", err.Error())
+		return enc, err
+	}
+
+	row.Next()
+	row.Scan(&enc.IToken)
+	row.Close()
+
+	row, err = database.Query("SELECT SignupDate FROM userdetails WHERE UIN= ?", uin)
+
+	if err != nil {
+		logging.Error("MySpace/Authentication", "Failed to fetch gift owner! (%s)", err.Error())
+		return enc, err
+	}
+
+	row.Next()
+	row.Scan(&enc.SDate)
+	row.Close()
+
+	row, err = database.Query("SELECT RandomSeed FROM userdetails WHERE NewUser= ?", uin)
+
+	if err != nil {
+		logging.Error("MySpace/Authentication", "Failed to fetch gift owner! (%s)", err.Error())
+		return enc, err
+	}
+
+	row.Next()
+	row.Scan(&enc.RSeed)
+	row.Close()
+
+	row, err = database.Query("SELECT GiftOwner FROM invites WHERE NewUser= ?", uin)
+
+	if err != nil {
+		logging.Error("MySpace/Authentication", "Failed to fetch gift owner! (%s)", err.Error())
+		return enc, err
+	}
+
+	row.Next()
+	row.Scan(&enc.GOwner)
+	row.Close()
+
+	enc.NUser = strconv.Itoa(uin)
+
+	return enc, err
 }

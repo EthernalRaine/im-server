@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	logging.Info("Main", "Starting Chimera...")
-	logging.Info("Main", "Build Info: %s (%s)", utility.GetBuildInfo(), utility.GetBuildSpecifics())
+	logging.Info("Main", "Build: %s", utility.GetBuildInfo())
+	logging.Info("Main", "Starting up services...")
 
 	database.Initialize()
 	service.Initialize()
